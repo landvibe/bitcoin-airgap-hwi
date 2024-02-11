@@ -7,7 +7,7 @@ import { CryptoPSBT } from "@keystonehq/bc-ur-registry";
 import { useEffect, useRef, useState } from "react";
 
 export function Encoder() {
-  const [text, setText] = useState("");
+  const [psbt, setPsbt] = useState("");
   const [qrList, setQrList] = useState<QrCode[]>([]);
   const [qrScale, setQrScale] = useState(6);
   const ref = useRef<HTMLCanvasElement>(null);
@@ -36,15 +36,15 @@ export function Encoder() {
   }, [qrList, qrScale]);
 
   const handleEncode = () => {
-    const MAX_LENGTH = 600;
+    const MAX_QR_LENGTH = 600;
 
     // cbor reference: https://github.com/BlockchainCommons/crypto-commons/blob/master/Docs/ur-4-psbt.md#prbts-crypto-psbt
-    const hex = base64ToHex(text);
+    const hex = base64ToHex(psbt);
     const size = hex.length / 2;
     const prefix = "59" + numberToHex(size);
     const cbor = prefix + hex;
     const cryptoPSBT = CryptoPSBT.fromCBOR(Buffer.from(cbor, "hex"));
-    const encoder = cryptoPSBT.toUREncoder(MAX_LENGTH);
+    const encoder = cryptoPSBT.toUREncoder(MAX_QR_LENGTH);
 
     const newQrList: QrCode[] = [];
     for (let i = 0; i < encoder.fragmentsLength; i++) {
@@ -63,8 +63,8 @@ export function Encoder() {
       <div className="h-1" />
       <div className="flex gap-3">
         <Input
-          value={text}
-          onChange={(e) => setText(e.currentTarget.value)}
+          value={psbt}
+          onChange={(e) => setPsbt(e.currentTarget.value)}
           placeholder="Input PSBT"
         />
         <Button onClick={handleEncode}>Generate QR</Button>
