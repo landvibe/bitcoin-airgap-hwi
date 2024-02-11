@@ -25,3 +25,5 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 ## Learn More
 
 To learn more about this tool, take a look at my blog [post](https://jason-dev.com/post/bitcoin-air-gap-interface)
+
+To just use this tool, visit [https://bitcoin-airgap-hwi.vercel.app](https://bitcoin-airgap-hwi.vercel.app/)
