@@ -1,70 +1,82 @@
 "use client";
 
+import { ResultText } from "@/components/ResultText";
 import { Button } from "@/components/ui/button";
 import { CryptoPSBT, URRegistryDecoder } from "@keystonehq/bc-ur-registry";
 import QrScanner from "qr-scanner";
 import { useRef, useState } from "react";
-import { toast } from "sonner";
 
 export function Decoder() {
+  const [rawSignedTransaction, setRawSignedTransaction] = useState("");
   const [signedPsbt, setSignedPsbt] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [scanningProgress, setScanningProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const handleScanQrCode = () => {
     if (videoRef.current) {
       setSignedPsbt("");
       setErrorMsg("");
+      setScanningProgress(0);
+      const urRegistryDecoder = new URRegistryDecoder();
       const qrScanner = new QrScanner(
         videoRef.current,
         (result) => {
           if (result.data) {
-            const ur = result.data;
-            try {
-              const urRegistryDecoder = new URRegistryDecoder();
-              urRegistryDecoder.receivePart(ur);
-              const cryptoPSBT = urRegistryDecoder.resultRegistryType();
-              if (isPSBT(cryptoPSBT)) {
-                const hex = cryptoPSBT.getPSBT().toString("hex");
-                const signedPsbt = hexToBase64(hex);
-                setSignedPsbt(signedPsbt);
-              } else {
-                setErrorMsg("invalid PSBT");
+            urRegistryDecoder.receivePart(result.data);
+            setScanningProgress(urRegistryDecoder.getProgress());
+            if (urRegistryDecoder.isComplete()) {
+              try {
+                const cryptoPSBT = urRegistryDecoder.resultRegistryType();
+                if (isPSBT(cryptoPSBT)) {
+                  const hex = cryptoPSBT.getPSBT().toString("hex");
+                  const signedPsbt = hexToBase64(hex);
+                  setSignedPsbt(signedPsbt);
+
+                  /**
+                   * TODO: Resolve bloew error
+                   * Error: Can not finalize input #0
+                   */
+                  // import { Psbt } from "bitcoinjs-lib";
+                  // const psbt = Psbt.fromHex(hex).finalizeAllInputs();
+                  // setRawSignedTransaction(psbt.extractTransaction().toHex());
+                } else {
+                  setErrorMsg("invalid PSBT");
+                }
+              } catch (e: any) {
+                setErrorMsg(e.toString());
               }
-            } catch (e: any) {
-              setErrorMsg(e.toString());
+              qrScanner.stop();
             }
-            qrScanner.stop();
           }
         },
-        {}
+        { highlightScanRegion: true, highlightCodeOutline: true }
       );
       qrScanner.start();
     }
   };
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(signedPsbt);
-      toast("success to copy");
-    } catch {}
-  };
   return (
-    <div>
-      <Button onClick={handleScanQrCode}>Scan signed PSBT</Button>
-      <div className="h-8" />
+    <div className="space-y-8">
+      <div className="flex gap-4 items-center">
+        <Button onClick={handleScanQrCode}>Scan signed PSBT</Button>
+        {!!scanningProgress && (
+          <div className="font-bold">
+            {`scanning progress: ${scanningProgress * 100}%`}
+          </div>
+        )}
+      </div>
       <video ref={videoRef}></video>
       {errorMsg && <div className="text-destructive">{errorMsg}</div>}
       {signedPsbt && (
-        <div>
-          <div className="font-bold">
-            This is signed PSBT. You should call finalizepsbt to get raw
-            transaction.
-          </div>
-          <div className="h-1" />
-          <div className="flex gap-4">
-            <div className="break-all">{signedPsbt}</div>
-            <Button onClick={handleCopy}>Copy to clipboard</Button>
-          </div>
-        </div>
+        <ResultText
+          desc="This is signed PSBT. You should call finalizepsbt to get raw transaction."
+          text={signedPsbt}
+        />
+      )}
+      {rawSignedTransaction && (
+        <ResultText
+          desc="This is rawSignedTransaction of the signed PSBT."
+          text={rawSignedTransaction}
+        />
       )}
     </div>
   );

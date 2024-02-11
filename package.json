@@ -12,6 +12,7 @@
     "@keystonehq/bc-ur-registry": "^0.6.4",
     "@radix-ui/react-slider": "^1.1.2",
     "@radix-ui/react-slot": "^1.0.2",
+    "bitcoinjs-lib": "^6.1.5",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "lucide-react": "^0.323.0",
